@@ -2,7 +2,13 @@
    CobranzaPro — app.js
    Base de datos: sql.js (SQLite en el navegador)
    ============================================================ */
+const supabaseUrl = 'TU_URL';
+const supabaseKey = 'TU_ANON_KEY';
 
+const supabaseClient = supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+);
 let DB = null;
 
 // ── Init ──────────────────────────────────────────────────
