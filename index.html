@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Estatus de Clientes — Sistema de Gestión</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS (reemplaza sql.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- XLSX para exportar Excel (sin cambios) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    </div>
+    <span class="brand-text">Estatus de Clientes</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active" data-section="dashboard">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a href="#" class="nav-item" data-section="clientes">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Clientes
+    </a>
+    <a href="#" class="nav-item" data-section="pagos">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Pagos
+    </a>
+    <a href="#" class="nav-item" data-section="reportes">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Reportes
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="db-status">
+      <span class="db-dot" id="dbDot"></span>
+      <span id="dbStatus">Cargando...</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content" id="mainContent">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" id="menuToggle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <h1 class="page-title" id="pageTitle">Dashboard</h1>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-date" id="topbarDate"></span>
+    </div>
+  </header>
+
+  <!-- ===== DASHBOARD ===== -->
+  <section class="section active" id="section-dashboard">
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-icon metric-icon--blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        </div>
+        <div class="metric-body">
+          <span class="metric-label">Total Clientes</span>
+          <span class="metric-value" id="m-total">0</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon metric-icon--green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="metric-body">
+          <span class="metric-label">Clientes Activos</span>
+          <span class="metric-value" id="m-activos">0</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon metric-icon--red">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <div class="metric-body">
+          <span class="metric-label">Clientes Atrasados</span>
+          <span class="metric-value" id="m-atrasados">0</span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon metric-icon--indigo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="metric-body">
+          <span class="metric-label">Clientes Liquidados</span>
+          <span class="metric-value" id="m-liquidados">0</span>
+        </div>
+      </div>
+      <div class="metric-card metric-card--wide">
+        <div class="metric-icon metric-icon--green">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 1 0 0 7h5a3.5 3.5 0 1 1 0 7H6"/></svg>
+        </div>
+        <div class="metric-body">
+          <span class="metric-label">Cobrado Este Mes</span>
+          <span class="metric-value metric-value--money" id="m-mes">$0.00</span>
+        </div>
+      </div>
+      <div class="metric-card metric-card--wide">
+        <div class="metric-icon metric-icon--yellow">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+        <div class="metric-body">
+          <span class="metric-label">Saldo Pendiente Total</span>
+          <span class="metric-value metric-value--money" id="m-pendiente">$0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-bottom">
+      <div class="card">
+        <div class="card-header">
+          <h3>Clientes Atrasados</h3>
+          <span class="badge badge--red" id="badge-atrasados">0</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="tbl-atrasados">
+            <thead><tr><th>Código</th><th>Nombre</th><th>Teléfono</th><th>Saldo</th><th>Último Pago</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>Próximos a Liquidar</h3>
+          <span class="badge badge--indigo" id="badge-proximos">0</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="tbl-proximos">
+            <thead><tr><th>Código</th><th>Nombre</th><th>Saldo</th><th>% Liquidado</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CLIENTES ===== -->
+  <section class="section" id="section-clientes">
+    <div class="section-toolbar">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Buscar por código, nombre o teléfono…" />
+      </div>
+      <div class="toolbar-filters">
+        <select id="filterEstado" class="filter-select">
+          <option value="">Todos los estados</option>
+          <option value="Activo">Activo</option>
+          <option value="Atrasado">Atrasado</option>
+          <option value="Liquidado">Liquidado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+      <button class="btn btn--primary" id="btnNuevoCliente">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Nuevo Cliente
+      </button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="data-table" id="tbl-clientes">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>Paquete</th>
+              <th>Monto Total</th>
+              <th>Saldo</th>
+              <th>Avance</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-clientes"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PAGOS ===== -->
+  <section class="section" id="section-pagos">
+    <div class="section-toolbar">
+      <div class="search-box">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchPagos" placeholder="Buscar por cliente o código…" />
+      </div>
+      <button class="btn btn--primary" id="btnNuevoPago">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Registrar Pago
+      </button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table class="data-table" id="tbl-pagos">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th>Monto</th>
+              <th>Método</th>
+              <th>Comentarios</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-pagos"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== REPORTES ===== -->
+  <section class="section" id="section-reportes">
+    <div class="reportes-grid">
+      <div class="card reporte-card" id="rep-atrasados">
+        <div class="reporte-icon reporte-icon--red">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <h3>Clientes Atrasados</h3>
+        <p>Listado de clientes con pagos vencidos</p>
+        <button class="btn btn--outline" onclick="generarReporte('atrasados')">Ver Reporte</button>
+      </div>
+      <div class="card reporte-card" id="rep-proximos">
+        <div class="reporte-icon reporte-icon--indigo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+        <h3>Próximos a Liquidar</h3>
+        <p>Clientes con más del 80% pagado</p>
+        <button class="btn btn--outline" onclick="generarReporte('proximos')">Ver Reporte</button>
+      </div>
+      <div class="card reporte-card" id="rep-mes">
+        <div class="reporte-icon reporte-icon--green">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <h3>Cobranza del Mes</h3>
+        <p>Pagos registrados en el mes actual</p>
+        <button class="btn btn--outline" onclick="generarReporte('mes')">Ver Reporte</button>
+      </div>
+      <div class="card reporte-card" id="rep-excel">
+        <div class="reporte-icon reporte-icon--yellow">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <h3>Exportar a Excel</h3>
+        <p>Exportar toda la cartera con historial</p>
+        <button class="btn btn--outline" onclick="exportarExcel()">Exportar</button>
+      </div>
+    </div>
+
+    <div class="card" id="reporte-resultado" style="display:none;">
+      <div class="card-header">
+        <h3 id="reporte-titulo">Reporte</h3>
+        <button class="btn btn--sm btn--outline" onclick="exportarReporteExcel()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Exportar
+        </button>
+      </div>
+      <div class="table-wrap" id="reporte-tabla"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== MODAL CLIENTE ===== -->
+<div class="modal-overlay" id="modalCliente">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalClienteTitulo">Nuevo Cliente</h2>
+      <button class="modal-close" onclick="cerrarModal('modalCliente')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="formCliente" onsubmit="return false;">
+        <input type="hidden" id="clienteId" />
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Código</label>
+            <input type="text" id="fCodigo" readonly class="input-readonly" placeholder="Auto-generado" />
+          </div>
+          <div class="form-group">
+            <label>Nombre Completo *</label>
+            <input type="text" id="fNombre" required placeholder="Ej. Juan García López" />
+          </div>
+          <div class="form-group">
+            <label>Teléfono</label>
+            <input type="tel" id="fTelefono" placeholder="Ej. 638 123 4567" />
+          </div>
+          <div class="form-group form-group--full">
+            <label>Dirección</label>
+            <input type="text" id="fDireccion" placeholder="Calle, número, colonia" />
+          </div>
+          <div class="form-group">
+            <label>Paquete Contratado</label>
+            <input type="text" id="fPaquete" placeholder="Ej. Plan Básico 12 semanas" />
+          </div>
+          <div class="form-group">
+            <label>Monto Total Contratado *</label>
+            <input type="number" id="fMonto" required min="0" step="0.01" placeholder="0.00" />
+          </div>
+          <div class="form-group">
+            <label>Fecha de Contratación *</label>
+            <input type="date" id="fFechaContrato" required />
+          </div>
+          <div class="form-group">
+            <label>Frecuencia de Pago</label>
+            <select id="fFrecuencia">
+              <option value="Semanal">Semanal</option>
+              <option value="Quincenal">Quincenal</option>
+              <option value="Mensual">Mensual</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <select id="fEstado">
+              <option value="Activo">Activo</option>
+              <option value="Atrasado">Atrasado</option>
+              <option value="Liquidado">Liquidado</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Observaciones</label>
+            <textarea id="fObservaciones" rows="2" placeholder="Notas adicionales…"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn--ghost" onclick="cerrarModal('modalCliente')">Cancelar</button>
+      <button class="btn btn--primary" onclick="guardarCliente()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL PAGO ===== -->
+<div class="modal-overlay" id="modalPago">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalPagoTitulo">Registrar Pago</h2>
+      <button class="modal-close" onclick="cerrarModal('modalPago')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="formPago" onsubmit="return false;">
+        <input type="hidden" id="pagoId" />
+        <div class="form-grid">
+          <div class="form-group form-group--full">
+            <label>Cliente *</label>
+            <select id="fPagoCliente" required></select>
+          </div>
+          <div class="form-group">
+            <label>Fecha del Pago *</label>
+            <input type="date" id="fPagoFecha" required />
+          </div>
+          <div class="form-group">
+            <label>Monto Abonado *</label>
+            <input type="number" id="fPagoMonto" required min="0.01" step="0.01" placeholder="0.00" />
+          </div>
+          <div class="form-group">
+            <label>Método de Pago</label>
+            <select id="fPagoMetodo">
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Tarjeta">Tarjeta</option>
+              <option value="Depósito">Depósito</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+          <div class="form-group form-group--full">
+            <label>Comentarios</label>
+            <textarea id="fPagoComentarios" rows="2" placeholder="Observaciones del pago…"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn--ghost" onclick="cerrarModal('modalPago')">Cancelar</button>
+      <button class="btn btn--primary" onclick="guardarPago()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL FICHA CLIENTE ===== -->
+<div class="modal-overlay modal-overlay--wide" id="modalFicha">
+  <div class="modal modal--wide">
+    <div class="modal-header">
+      <h2 id="fichaClienteNombre">Ficha del Cliente</h2>
+      <button class="modal-close" onclick="cerrarModal('modalFicha')">✕</button>
+    </div>
+    <div class="modal-body" id="fichaBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
+</body>
+</html>
