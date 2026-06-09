@@ -4,7 +4,7 @@
    ============================================================ */
 
 const SUPABASE_URL = 'https://gekinishaxgtfynxjkgb.supabase.co';
-const SUPABASE_KEY = 'TU_ANON_PUBLIC_KEY_AQUI'; // Reemplaza con tu anon key
+const SUPABASE_KEY =  'sb_publishable_jvMZqLbqrGDCPwApQoA4DQ_xlxGwANZ';
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
